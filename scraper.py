@@ -1,8 +1,12 @@
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.firefox.service import Service
-from bs4 import BeautifulSoup
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
 import csv
+from bs4 import BeautifulSoup
 
 geckodriver_path = './geckodriver'
 
@@ -11,28 +15,26 @@ options.add_argument("--headless")
 service = Service(executable_path=geckodriver_path)
 driver = webdriver.Firefox(service=service, options=options)
 
-url = 'https://www.staples.ca/collections/laptops-90'
+urls = [
+    'https://www.staples.ca/collections/laptops-90',
+]
 
-driver.get(url)
-driver.implicitly_wait(10)
 
-page_source = driver.page_source
 
-soup = BeautifulSoup(page_source, 'html.parser')
+for url in urls:
+    driver.get(url)
+    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.ais-hits--item')))
 
-## Here is what we're trying to parse:
-## <span class="money pre-money" data-product-id="(example product id)" style="visibility: visible;">$(example amount)</span>
-
-products = soup.find_all('span', class_='money pre-money')
-
-with open('products.csv', mode='w', newline='', encoding='utf-8') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Product ID', 'Price'])
-
-    for product in products:
-        product_id = product.get('data-product-id')
-        price = product.text.strip()
-        if product_id and price:
-            writer.writerow([product_id, price])
-
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)  # Adjust this depending on your internet speed and the response time of the website
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, 'html.parser')
+    product_items = soup.find_all('div', class_='ais-hits--item')
+    print("Number of items in product_items:", len(product_items))
 driver.quit()
