@@ -1,4 +1,5 @@
 from selenium import webdriver
+import sqlite3
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -6,14 +7,19 @@ from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementClickInterceptedException
 import time
-import csv
 
 geckodriver_path = './geckodriver'
-
 options = FirefoxOptions()
 options.add_argument("--headless")
 service = Service(executable_path=geckodriver_path)
 driver = webdriver.Firefox(service=service, options=options)
+
+conn = sqlite3.connect('StaplesDB')
+c = conn.cursor()
+c.execute('''CREATE TABLE staples(productID TEXT, productName TEXT, price INT, discount INT)''')
+
+
+
 
 def accept_cookies():
     try:
@@ -33,13 +39,17 @@ def scrape_current_page():
         
     for index, item in enumerate(items):
         product_link = item.find_element(By.CSS_SELECTOR, '.product-thumbnail__title.product-link')
-        product_name = product_link.text
+        productName = product_link.text
         price_info = item.find_element(By.CSS_SELECTOR, '.money.pre-money')
-        current_price = price_info.text
-        product_id = price_info.get_attribute('data-product-id')  # Extracting product ID
-        print(f"{product_name}, Price: {current_price}, Product ID: {product_id}")
-
-
+        price = price_info.text
+        productID = price_info.get_attribute('data-product-id')  # Extracting product ID
+        discount = "No discount"
+        discount_elements = item.find_elements(By.TAG_NAME, 'strike')
+        if discount_elements:
+            discount = discount_elements[0].text
+            discount = discount - price
+        c.execute('''INSERT INTO staples VALUES(?,?,?,?)''', (productID, productName, price, discount))
+        conn.commit()
 
 def click_next_page():
     try:
@@ -68,7 +78,6 @@ def click_next_page():
             return True
     except (TimeoutException, NoSuchElementException):
         return False
-
 
 def main():
     driver.get('https://www.staples.ca/collections/laptops-90')
