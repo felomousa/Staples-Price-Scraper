@@ -4,8 +4,9 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementClickInterceptedException
 import time
+import csv
 
 geckodriver_path = './geckodriver'
 
@@ -26,11 +27,19 @@ def accept_cookies():
         print("No cookie banner found or it's not clickable.")
 
 def scrape_current_page():
-    print("Scraping data from:", driver.current_url)
-    # Wait for the items to be visible on the page before scraping
+    #print("Scraping data from:", driver.current_url)
     WebDriverWait(driver, 10).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, 'ais-hits--item')))
     items = driver.find_elements(By.CLASS_NAME, 'ais-hits--item')
-    return len(items)
+        
+    for index, item in enumerate(items):
+        product_link = item.find_element(By.CSS_SELECTOR, '.product-thumbnail__title.product-link')
+        product_name = product_link.text
+        price_info = item.find_element(By.CSS_SELECTOR, '.money.pre-money')
+        current_price = price_info.text
+        product_id = price_info.get_attribute('data-product-id')  # Extracting product ID
+        print(f"{product_name}, Price: {current_price}, Product ID: {product_id}")
+
+
 
 def click_next_page():
     try:
@@ -44,23 +53,32 @@ def click_next_page():
         
         next_page_button = next_page_button_parent.find_element(By.CSS_SELECTOR, '.ais-Pagination-link')
         if next_page_button:
-            next_page_button.click()
-            # Wait for the items to be visible on the next page to ensure the page has loaded
+            # Scroll the next page button into view
+            driver.execute_script("arguments[0].scrollIntoView();", next_page_button)
+            time.sleep(1)  # Adding a brief delay to ensure the page adjusts before clicking
+            
+            try:
+                # Attempt to click the button normally
+                next_page_button.click()
+            except ElementClickInterceptedException:
+                # If a normal click doesn't work, use JavaScript to force the click
+                driver.execute_script("arguments[0].click();", next_page_button)
+            
             WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, 'ais-hits--item')))
             return True
     except (TimeoutException, NoSuchElementException):
         return False
 
+
 def main():
-    start_url = 'https://www.staples.ca/collections/laptops-90?page=1&refinementList%5Bnamed_tags.bopis_eligible%5D%5B0%5D=True'
-    driver.get(start_url)
+    driver.get('https://www.staples.ca/collections/laptops-90')
 
     accept_cookies()  # Handle the cookie banner at the start
-    
+
+    all_data = []
     try:
         while True:
-            item_count = scrape_current_page()
-            print(f"Scraped {item_count} items from the page.")
+            scrape_current_page()
             if not click_next_page():
                 print("Reached the last page or next page button not clickable.")
                 break
