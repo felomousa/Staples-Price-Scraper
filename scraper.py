@@ -16,10 +16,7 @@ driver = webdriver.Firefox(service=service, options=options)
 
 conn = sqlite3.connect('StaplesDB')
 c = conn.cursor()
-c.execute('''CREATE TABLE staples(productID TEXT, productName TEXT, price INT, discount INT)''')
-
-
-
+#c.execute('''CREATE TABLE staples(productID TEXT, productName TEXT, price INT, discount INT)''')
 
 def accept_cookies():
     try:
@@ -46,7 +43,12 @@ def scrape_current_page():
         discount = "No discount"
         discount_elements = item.find_elements(By.TAG_NAME, 'strike')
         if discount_elements:
-            discount = discount_elements[0].text
+            discount_text = discount_elements[0].text.replace('$', '').replace(',', '')
+            discount = float(discount_text)  # Convert the cleaned string to float
+        price_text = price.replace('$', '').replace(',', '')
+        price = float(price_text) 
+
+        if discount != "No discount":
             discount = discount - price
         c.execute('''INSERT INTO staples VALUES(?,?,?,?)''', (productID, productName, price, discount))
         conn.commit()
