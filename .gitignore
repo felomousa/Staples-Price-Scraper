@@ -3,3 +3,4 @@ geckodriver*
 chromedriver*
 venv/*
 __pycache__/
+StaplesDB
