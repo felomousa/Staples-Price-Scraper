@@ -1,3 +1,5 @@
 geckdriver
 geckodriver*
 chromedriver*
+venv/*
+__pycache__/
