@@ -38,11 +38,9 @@ script that pulls laptop listings from Staples Canada’s Algolia index and Shop
 
 1. `pip install requests`  
 2. ensure `StaplesDB` does not conflict with existing files  
-3. run:
-   ```bash
-   python script.py
+3. run scraper.py
 
-	4.	output: updated StaplesDB file with current and historical data
+output: updated StaplesDB file with current and historical data
 
 
 
