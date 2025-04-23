@@ -4,3 +4,4 @@ chromedriver*
 venv/*
 __pycache__/
 StaplesDB
+web/
