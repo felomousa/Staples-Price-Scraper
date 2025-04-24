@@ -1,17 +1,19 @@
 # staples-scraper
+_Live @_ [tracker.felomousa.com](https://tracker.felomousa.com/)
 
-script that pulls laptop listings from Staples Canada’s Algolia index and Shopify pricing-rules API, storing current data and history in SQLite.
+script that pulls laptop listings from Staples Canada’s Algolia index and Shopify pricing-rules API, storing current historical pricing in SQLite.
 
 ## Features
-- paginated fetch from Algolia search index  
-- batch lookup of discount rules via Shopify pricerules API  
-- extracts variant ID, name, final price, discount, and stock for store 93 (Langley)  
+- fetch from Algolia search index  
+- batch lookup of discount rules via Shopify pricerules API
+- compatible across most shopify storefronts, easily configurable 
+- extracts product ID, name, final price, discount, and stock amount for store 93 (Langley)  
 - upserts `staples` table and appends to `PriceHistory` each run  
 - handles double-encoded JSON, huge page sizes, rate-limit pauses  
 
 ## Tech Stack
 - **Python** with `requests`, `sqlite3`  
-- no browser or Selenium—talks directly to Algolia & policy API  
+- pulls from Algolia & policy API, avoids manual web scraping using selenium etc. 
 
 ## Database Schema
 
@@ -38,13 +40,11 @@ script that pulls laptop listings from Staples Canada’s Algolia index and Shop
 
 1. `pip install requests`  
 2. ensure `StaplesDB` does not conflict with existing files  
-3. run scraper.py
+3. ```python scraper.py```
 
 output: updated StaplesDB file with current and historical data
 
-
-
 ## changes since v1 (Selenium-based)
 
-- the scraper now uses direct algolia and shopify pricerules api requests instead of headless selenium browser automation.  it retrieves variant id, name, price, discount, and store-specific stock in a single paginated json query rather than clicking through dom pages.  dependencies are limited to the requests library and rate-limiting is handled via configurable alg_pause and rules_pause intervals.
+- the scraper now uses direct algolia and shopify pricerules api requests instead of headless selenium browser automation.  it retrieves variant id, name, price, discount, and store-specific stock in a single paginated json query rather than clicking through dom pages.
 
